@@ -849,19 +849,23 @@ const filterMessages = (msg: WAMessage): boolean => {
 const wbotMessageListener = async (wbot: Session): Promise<void> => {
   try {
     wbot.ev.on("messages.upsert", async (messageUpsert: ImessageUpsert) => {
-      const msg = messageUpsert.messages
+      const messages = messageUpsert.messages
         .filter(filterMessages)
         .map(msg => msg);
 
-      if (!msg) return;
+      if (!messages) return;
 
-      msg.forEach(async (msg: proto.IWebMessageInfo) => {
+      messages.forEach(async (message: proto.IWebMessageInfo) => {
         if (
           wbot.type === "md" &&
-          !msg.key.fromMe &&
+          !message.key.fromMe &&
           messageUpsert.type === "notify"
         ) {
-          (wbot as WASocket)!.readMessages([msg.key]);
+          (wbot as WASocket)!.sendReadReceipt(
+            message.key.remoteJid,
+            message.key.participant,
+            [message.key.id]
+          );
         }
         // console.log(JSON.stringify(message));
         handleMessage(message, wbot);
